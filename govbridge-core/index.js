@@ -354,6 +354,6 @@ app.post("/api/bridge/request", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+app.listen(process.env.PORT || 4000, () => {
   console.log(`[GovBridge] Core running on http://localhost:${PORT}`);
 });
