@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>GovBridge — Monitoring Dashboard</title>
+<style>
+  :root {
+    --blue: #1e3a8a;
+    --green: #059669;
+    --red: #dc2626;
+    --amber: #d97706;
+    --bg: #f5f7fa;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #1e293b;
+    --muted: #64748b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  header {
+    background: var(--blue);
+    color: white;
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  header h1 { margin: 0; font-size: 20px; letter-spacing: 0.3px; }
+  header p { margin: 4px 0 0; font-size: 13px; opacity: 0.85; }
+
+  .container { padding: 24px 32px; max-width: 1200px; margin: 0 auto; }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .stat-card .value { font-size: 26px; font-weight: 700; }
+  .stat-card .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+  .stat-card.total .value { color: var(--blue); }
+  .stat-card.success .value { color: var(--green); }
+  .stat-card.rejected .value { color: var(--amber); }
+  .stat-card.failed .value { color: var(--red); }
+
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  .panel h2 { margin: 0 0 14px; font-size: 15px; }
+
+  .demo-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  select, button {
+    font-family: inherit;
+    font-size: 14px;
+    padding: 9px 14px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+  }
+  button {
+    background: var(--blue);
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  button:hover { opacity: 0.9; }
+  button:disabled { opacity: 0.6; cursor: not-allowed; }
+  #demoResult { margin-top: 12px; font-size: 13px; color: var(--muted); white-space: pre-wrap; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.4px; }
+  tr:hover { background: #fafbfc; }
+  .badge {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .badge.SUCCESS { background: #d1fae5; color: var(--green); }
+  .badge.FAILED_AT_TARGET { background: #fee2e2; color: var(--red); }
+  .badge.REJECTED_AUTH,
+  .badge.REJECTED_SOURCE_VALIDATION,
+  .badge.REJECTED_TARGET_VALIDATION,
+  .badge.REJECTED_MALFORMED,
+  .badge.REJECTED_UNKNOWN_TARGET,
+  .badge.REJECTED_NO_MAPPING { background: #fef3c7; color: var(--amber); }
+
+  .trace { font-family: "SF Mono", Consolas, monospace; font-size: 11px; color: var(--muted); }
+  .empty { color: var(--muted); font-size: 13px; padding: 20px 0; }
+
+  .notify-item {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .notify-item:last-child { border-bottom: none; }
+  .notify-item .msg { color: var(--text); }
+  .notify-item .meta { color: var(--muted); font-size: 11px; margin-top: 2px; }
+  .notify-item.SUCCESS .msg::before { content: "✅ "; }
+  .notify-item.FAILED .msg::before { content: "⚠️ "; }
+  .live-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #4ade80;
+    margin-right: 6px;
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>GovBridge — Monitoring Dashboard</h1>
+    <p>Interoperability layer between Government Platform A and Platform B</p>
+  </div>
+  <div style="font-size:13px;"><span class="live-dot"></span>Live — auto-refreshing</div>
+</header>
+
+<div class="container">
+
+  <div class="stats">
+    <div class="stat-card total"><div class="value" id="statTotal">–</div><div class="label">Total Transactions</div></div>
+    <div class="stat-card success"><div class="value" id="statSuccess">–</div><div class="label">Successful</div></div>
+    <div class="stat-card rejected"><div class="value" id="statRejected">–</div><div class="label">Rejected</div></div>
+    <div class="stat-card failed"><div class="value" id="statFailed">–</div><div class="label">Failed at Target</div></div>
+  </div>
+
+  <div class="panel">
+    <h2>Live Notifications <span style="font-size:11px; color:var(--muted); font-weight:400;">(event-driven, pushed by GovBridge)</span></h2>
+    <div id="notifyWrap"><div class="empty">No notifications yet.</div></div>
+  </div>
+
+  <div class="panel">
+    <h2>Send a live request through GovBridge</h2>
+    <div class="demo-row">
+      <select id="citizenSelect">
+        <option value="CID-1001">CID-1001 — Ananya Rao (expects VERIFIED)</option>
+        <option value="CID-1002">CID-1002 — Rahul Mehta (expects VERIFIED)</option>
+        <option value="CID-1003">CID-1003 — Sara Thomas (expects PENDING_REVIEW)</option>
+      </select>
+      <button id="sendBtn" onclick="sendDemoRequest()">Send Verification Request via GovBridge</button>
+    </div>
+    <div id="demoResult"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Citizen Self-Service Tracking (role-scoped)</h2>
+    <p style="font-size:13px; color:var(--muted); margin:0 0 12px;">
+      Simulates a citizen checking their own application status. Only that citizen's
+      record is returned — no other citizens' data, no raw payloads.
+    </p>
+    <div class="demo-row">
+      <select id="trackRole">
+        <option value="citizen">Login as: Citizen</option>
+        <option value="official">Login as: Official</option>
+        <option value="">Login as: (no role — should be rejected)</option>
+      </select>
+      <input id="trackRecordId" placeholder="e.g. CID-1001" value="CID-1001"
+        style="padding:9px 14px; border-radius:7px; border:1px solid var(--border); font-size:14px;" />
+      <button onclick="trackRecord()">Track My Application</button>
+    </div>
+    <div id="trackResult" style="margin-top:12px; font-size:13px; color:var(--muted); white-space:pre-wrap;"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Transaction Audit Trail <span style="font-size:11px; color:var(--muted); font-weight:400;">(Official role only)</span></h2>
+    <div id="tableWrap"><div class="empty">Loading transactions…</div></div>
+  </div>
+
+</div>
+
+<script>
+  const GOVBRIDGE_URL = "http://localhost:4000";
+  const PLATFORM_A_URL = "http://localhost:4001";
+  const NOTIFICATION_SERVICE_URL = "http://localhost:4003";
+
+  async function trackRecord() {
+    const role = document.getElementById("trackRole").value;
+    const recordId = document.getElementById("trackRecordId").value.trim();
+    const resultEl = document.getElementById("trackResult");
+    if (!recordId) { resultEl.textContent = "Enter a record ID."; return; }
+    try {
+      const headers = role ? { "x-role": role } : {};
+      const res = await fetch(`${GOVBRIDGE_URL}/api/track/${encodeURIComponent(recordId)}`, { headers });
+      const data = await res.json();
+      resultEl.textContent = JSON.stringify(data, null, 2);
+    } catch (err) {
+      resultEl.textContent = "Error: " + err.message;
+    }
+  }
+
+  async function sendDemoRequest() {
+    const btn = document.getElementById("sendBtn");
+    const citizenId = document.getElementById("citizenSelect").value;
+    const resultEl = document.getElementById("demoResult");
+    btn.disabled = true;
+    try {
+      resultEl.textContent = "Capturing citizen consent…";
+      await fetch(`${PLATFORM_A_URL}/api/citizens/${citizenId}/consent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ purpose: "land-record-verification" }),
+      });
+
+      resultEl.textContent = "Consent captured. Sending request from Platform A through GovBridge to Platform B…";
+      const res = await fetch(`${PLATFORM_A_URL}/api/citizens/${citizenId}/request-verification`, { method: "POST" });
+      const data = await res.json();
+      resultEl.textContent = JSON.stringify(data, null, 2);
+    } catch (err) {
+      resultEl.textContent = "Error: " + err.message;
+    } finally {
+      btn.disabled = false;
+      loadAudit();
+    }
+  }
+
+  function statusBadge(status) {
+    return `<span class="badge ${status}">${status.replace(/_/g, " ")}</span>`;
+  }
+
+  function timeAgo(ts) {
+    return ts.replace("T", " ").replace("Z", "");
+  }
+
+  async function loadAudit() {
+    try {
+      const res = await fetch(`${GOVBRIDGE_URL}/api/audit?limit=25`, {
+        headers: { "x-role": "official" },
+      });
+      const data = await res.json();
+      const txs = data.transactions || [];
+
+      const total = txs.length;
+      const success = txs.filter(t => t.status === "SUCCESS").length;
+      const failed = txs.filter(t => t.status === "FAILED_AT_TARGET").length;
+      const rejected = total - success - failed;
+
+      document.getElementById("statTotal").textContent = total;
+      document.getElementById("statSuccess").textContent = success;
+      document.getElementById("statRejected").textContent = rejected;
+      document.getElementById("statFailed").textContent = failed;
+
+      const wrap = document.getElementById("tableWrap");
+      if (total === 0) {
+        wrap.innerHTML = '<div class="empty">No transactions yet — send a request above to see it appear here live.</div>';
+        return;
+      }
+
+      let html = `<table><thead><tr>
+        <th>Trace ID</th><th>Source</th><th>Target</th><th>Status</th><th>Code</th><th>Time</th>
+      </tr></thead><tbody>`;
+      for (const t of txs) {
+        html += `<tr>
+          <td class="trace">${t.trace_id.slice(0, 8)}…</td>
+          <td>${t.source_platform || "–"}</td>
+          <td>${t.target_platform || "–"}</td>
+          <td>${statusBadge(t.status)}</td>
+          <td>${t.status_code ?? "–"}</td>
+          <td>${t.created_at}</td>
+        </tr>`;
+      }
+      html += "</tbody></table>";
+      wrap.innerHTML = html;
+    } catch (err) {
+      document.getElementById("tableWrap").innerHTML = `<div class="empty">Could not reach GovBridge (${err.message}). Is it running?</div>`;
+    }
+  }
+
+  async function loadNotifications() {
+    try {
+      const res = await fetch(`${NOTIFICATION_SERVICE_URL}/api/notifications?limit=10`);
+      const data = await res.json();
+      const items = data.notifications || [];
+      const wrap = document.getElementById("notifyWrap");
+      if (items.length === 0) {
+        wrap.innerHTML = '<div class="empty">No notifications yet.</div>';
+        return;
+      }
+      wrap.innerHTML = items
+        .map(
+          (n) => `<div class="notify-item ${n.status}">
+            <div class="msg">${n.message}</div>
+            <div class="meta">${n.receivedAt} — trace ${n.traceId.slice(0, 8)}…</div>
+          </div>`
+        )
+        .join("");
+    } catch (err) {
+      document.getElementById("notifyWrap").innerHTML = `<div class="empty">Could not reach Notification Service (${err.message}).</div>`;
+    }
+  }
+
+  loadAudit();
+  loadNotifications();
+  setInterval(loadAudit, 3000);
+  setInterval(loadNotifications, 3000);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "name": "govbridge",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start:a": "node platform-a/index.js",
+    "start:b": "node platform-b/index.js",
+    "start:notify": "node notification-service/index.js",
+    "start:bridge": "node govbridge-core/index.js",
+    "dev": "concurrently -n PLATFORM-A,PLATFORM-B,NOTIFY,GOVBRIDGE -c blue,magenta,cyan,green \"npm:start:a\" \"npm:start:b\" \"npm:start:notify\" \"npm:start:bridge\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.20.0",
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  }
+}
